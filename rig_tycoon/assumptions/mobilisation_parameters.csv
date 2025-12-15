@@ -1,0 +1,4 @@
+rig_class,fixed_cost_usd_m,cost_per_km_usd_k,avg_speed_km_per_day
+jackup,1.2,4.5,6
+semi,2.5,6.5,7
+drillship,3.5,3.5,18

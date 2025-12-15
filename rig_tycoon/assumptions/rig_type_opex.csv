@@ -1,0 +1,16 @@
+rig_class,rig_state,monthly_opex_usd_m
+jackup,ACTIVE,2.5
+jackup,WARM_STACKED,0.45
+jackup,COLD_STACKED,0.16
+jackup,LAID_UP,0.10
+jackup,SCRAPPED,0.00
+semi,ACTIVE,5.2
+semi,WARM_STACKED,1.15
+semi,COLD_STACKED,0.60
+semi,LAID_UP,0.38
+semi,SCRAPPED,0.00
+drillship,ACTIVE,7.5
+drillship,WARM_STACKED,1.75
+drillship,COLD_STACKED,0.85
+drillship,LAID_UP,0.55
+drillship,SCRAPPED,0.00

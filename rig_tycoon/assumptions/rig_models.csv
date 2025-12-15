@@ -1,0 +1,9 @@
+model,rig_class,generation,positioning,build_era_start,build_era_end,water_depth_capability,harsh_env,dual_activity,drilling_speed_mult,spec_score,opex_class,reactivation_cost_class,typical_regions,design_role
+JU-200 Legacy,Jackup,3rd,N/A,1995,2005,300,No,No,1.00,58,Low,Low,"Middle East;SEA;India","Paid-off survival rig"
+JU-350 Standard,Jackup,4th,N/A,2005,2012,350,No,No,1.00,68,Medium,Low,"GOM;Middle East;SEA","Global workhorse"
+JU-400HE Harsh,Jackup,5th,N/A,2008,2016,400,Yes,No,1.00,78,Medium,Medium,"North Sea","Harsh-environment specialist"
+SS-1200 Benign,Semi,4th,MORED,2000,2008,1200,No,No,1.00,65,High,High,"West Africa;GOM","Oversupplied midwater semi"
+SS-1500HE Harsh,Semi,5th,DP3,2008,2015,1500,Yes,No,1.00,82,High,High,"North Sea","Scarce harsh-environment semi"
+DS-2000 Early UDW,Drillship,6th,DP3,2008,2012,2000,No,No,1.00,72,Very High,Very High,"West Africa;Brazil","Early-generation deepwater drillship"
+DS-3000DA Modern,Drillship,7th,DP3,2013,2019,3000,No,Yes,1.15,88,Extreme,Extreme,"Brazil;GOM","Boom-cycle money printer"
+DS-HE Arctic,Drillship,7th,DP3,2015,2022,2500,Yes,Yes,1.15,92,Extreme,Extreme,"Arctic;Barents Sea","Ultra-rare endgame asset"
