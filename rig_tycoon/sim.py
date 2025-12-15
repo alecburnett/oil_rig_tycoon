@@ -13,6 +13,8 @@ from .market import Market
 from .ai import AIPersonality, choose_bid
 
 
+from datetime import datetime
+
 # ======================
 # Config
 # ======================
@@ -53,15 +55,27 @@ class Sim:
         }
 
         # logging
-        self.history: list[dict] = []
-        self.output_dir = Path("output")
-        self.output_dir.mkdir(exist_ok=True)
+        self.market_history: list[dict] = []
+        self.company_history: list[dict] = []
+        
+        timestamp = datetime.now().isoformat(timespec="seconds").replace(":", "-")
+        self.output_dir = Path("output") / timestamp
+        self.output_dir.mkdir(parents=True, exist_ok=True)
 
     # ======================
     # Logging
     # ======================
 
     def _record_month(self) -> None:
+        # Market grain
+        self.market_history.append({
+            "month": self.market.month,
+            "oil_price": round(self.market.oil_price, 2),
+            "demand_ns": round(self.market.demand_north_sea, 2),
+            "demand_gom": round(self.market.demand_gom, 2),
+        })
+
+        # Company grain
         for c in self.all_companies:
             active = sum(1 for r in c.rigs if r.on_contract_months_left > 0)
             warm = sum(
@@ -73,11 +87,8 @@ class Sim:
                 if r.on_contract_months_left == 0 and r.state == RigState.COLD
             )
 
-            self.history.append({
+            self.company_history.append({
                 "month": self.market.month,
-                "oil_price": round(self.market.oil_price, 2),
-                "demand_ns": round(self.market.demand_north_sea, 2),
-                "demand_gom": round(self.market.demand_gom, 2),
                 "company": c.name,
                 "cash_musd": round(c.cash_musd, 2),
                 "rigs_active": active,
@@ -329,10 +340,17 @@ class Sim:
                 print("\n💥 BANKRUPT. Game over.\n")
                 break
 
-        df = pd.DataFrame(self.history)
-        out = self.output_dir / "sim_history.csv"
-        df.to_csv(out, index=False)
-        print(f"\n📊 Simulation history written to {out.resolve()}")
+        df_market = pd.DataFrame(self.market_history)
+        out_market = self.output_dir / "sim_history_market.csv"
+        df_market.to_csv(out_market, index=False)
+
+        df_company = pd.DataFrame(self.company_history)
+        out_company = self.output_dir / "sim_history_company.csv"
+        df_company.to_csv(out_company, index=False)
+
+        print(f"\n📊 Simulation history written to:")
+        print(f"  - {out_market.resolve()}")
+        print(f"  - {out_company.resolve()}")
 
     # ======================
     # Output
