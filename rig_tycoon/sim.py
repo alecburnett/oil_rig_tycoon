@@ -74,7 +74,6 @@ class Sim:
             "month": self.oil_market.month,
             "oil_price": round(self.oil_market.oil_price, 2),
             "steel_price": round(self.steel_market.steel_price, 2),
-            "steel_demand": round(self.steel_market.demand_global, 2),
         })
 
         # Demand grain
@@ -359,15 +358,15 @@ class Sim:
                 break
 
         df_market = pd.DataFrame(self.market_history)
-        out_market = self.output_dir / "sim_history_market.csv"
+        out_market = self.output_dir / "simulation_output_market.csv"
         df_market.to_csv(out_market, index=False)
 
         df_demand = pd.DataFrame(self.demand_history)
-        out_demand = self.output_dir / "sim_history_demand.csv"
+        out_demand = self.output_dir / "simulation_output_regional_demand.csv"
         df_demand.to_csv(out_demand, index=False)
 
         df_company = pd.DataFrame(self.company_history)
-        out_company = self.output_dir / "sim_history_company.csv"
+        out_company = self.output_dir / "simulation_output_company.csv"
         df_company.to_csv(out_company, index=False)
 
         print(f"\n📊 Simulation history written to:")
