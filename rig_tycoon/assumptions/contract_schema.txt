@@ -1,0 +1,26 @@
+Contract
+---
+id: int
+contract_type: enum { EXPLORATION, DEVELOPMENT, WORKOVER }
+region: enum
+
+# Physical requirements
+water_depth_m: int
+well_depth_m: int
+bop_psi_required: int
+harsh_required: bool
+
+# Rig requirements
+rig_class_required: enum { JACKUP, SEMI, DRILLSHIP, SEMI_OR_DRILLSHIP }
+positioning_required: enum { ANY, MORED_OK, DP_REQUIRED }
+min_spec_score: int
+
+# Scope
+wells_base: int                    # base wells
+option_wells: int                  # exploration only
+option_prob: float                 # 0–1
+base_months: int                   # minimum term
+months_per_1000m: float            # drives duration from well depth
+
+# Commercials
+max_dayrate_k: int

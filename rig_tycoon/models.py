@@ -6,7 +6,8 @@ from typing import Optional
 
 class RigType(str, Enum):
     JACKUP = "jackup"
-    SEMI = "semi"
+    SEMI = "semisub"
+    DRILLER = "drillship"
 
 
 class RigState(str, Enum):
