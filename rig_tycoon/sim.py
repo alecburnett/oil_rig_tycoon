@@ -9,7 +9,7 @@ from .models import (
     Company, Rig, RigType, RigState, Region,
     Contract, ContractSpec
 )
-from .market import Market
+from .market import OilMarket, SteelMarket
 from .ai import AIPersonality, choose_bid
 
 
@@ -33,7 +33,8 @@ class Sim:
     def __init__(self, cfg: SimConfig):
         self.rng = random.Random(cfg.seed)
         self.cfg = cfg
-        self.market = Market(rng=self.rng)
+        self.oil_market = OilMarket(rng=self.rng)
+        self.steel_market = SteelMarket(rng=self.rng)
         self.contract_id_seq = 1
 
         self.player = self._make_player()
@@ -56,6 +57,7 @@ class Sim:
 
         # logging
         self.market_history: list[dict] = []
+        self.demand_history: list[dict] = []
         self.company_history: list[dict] = []
         
         timestamp = datetime.now().isoformat(timespec="seconds").replace(":", "-")
@@ -69,10 +71,25 @@ class Sim:
     def _record_month(self) -> None:
         # Market grain
         self.market_history.append({
-            "month": self.market.month,
-            "oil_price": round(self.market.oil_price, 2),
-            "demand_ns": round(self.market.demand_north_sea, 2),
-            "demand_gom": round(self.market.demand_gom, 2),
+            "month": self.oil_market.month,
+            "oil_price": round(self.oil_market.oil_price, 2),
+            "steel_price": round(self.steel_market.steel_price, 2),
+            "steel_demand": round(self.steel_market.demand_global, 2),
+        })
+
+        # Demand grain
+        self.demand_history.append({
+            "month": self.oil_market.month,
+            "demand_north_sea": round(self.oil_market.demand_north_sea, 2),
+            "demand_gom": round(self.oil_market.demand_gom, 2),
+            "demand_sea": round(self.oil_market.demand_sea, 2),
+            "demand_india": round(self.oil_market.demand_india, 2),
+            "demand_middle_east": round(self.oil_market.demand_middle_east, 2),
+            "demand_west_africa": round(self.oil_market.demand_west_africa, 2),
+            "demand_east_africa": round(self.oil_market.demand_east_africa, 2),
+            "demand_brazil": round(self.oil_market.demand_brazil, 2),
+            "demand_arctic": round(self.oil_market.demand_arctic, 2),
+            "demand_barents": round(self.oil_market.demand_barents, 2),
         })
 
         # Company grain
@@ -88,7 +105,7 @@ class Sim:
             )
 
             self.company_history.append({
-                "month": self.market.month,
+                "month": self.oil_market.month,
                 "company": c.name,
                 "cash_musd": round(c.cash_musd, 2),
                 "rigs_active": active,
@@ -183,7 +200,7 @@ class Sim:
         tenders: list[Contract] = []
 
         for region in (Region.NORTH_SEA, Region.GOM):
-            demand = self.market.regional_demand(region)
+            demand = self.oil_market.regional_demand(region)
 
             n = max(0, int(round(demand + self.rng.random() * 1.5)))
 
@@ -198,7 +215,7 @@ class Sim:
                 min_spec = 70 if harsh else self.rng.choice([55, 60, 65, 70])
 
                 base = 140 if rig_type == RigType.JACKUP else 260
-                oil_factor = (self.market.oil_price - 40) / 50
+                oil_factor = (self.oil_market.oil_price - 40) / 50
                 max_dayrate = int(
                     base * (0.65 + 0.65 * max(0.0, min(1.4, oil_factor)))
                 )
@@ -312,7 +329,7 @@ class Sim:
 
         softness = 1.0 - min(
             1.0,
-            self.market.regional_demand(tender.spec.region) / 3.0
+            self.oil_market.regional_demand(tender.spec.region) / 3.0
         )
         discount = int((0.08 + 0.22 * softness) * tender.spec.max_dayrate)
         dayrate = tender.spec.max_dayrate - discount
@@ -329,7 +346,8 @@ class Sim:
 
     def run(self) -> None:
         for _ in range(self.cfg.months):
-            self.market.step_month()
+            self.oil_market.step_month()
+            self.steel_market.step_month()
             tenders = self._generate_contracts()
             self._award_contracts(tenders)
             self._settle_month_cashflows()
@@ -344,12 +362,17 @@ class Sim:
         out_market = self.output_dir / "sim_history_market.csv"
         df_market.to_csv(out_market, index=False)
 
+        df_demand = pd.DataFrame(self.demand_history)
+        out_demand = self.output_dir / "sim_history_demand.csv"
+        df_demand.to_csv(out_demand, index=False)
+
         df_company = pd.DataFrame(self.company_history)
         out_company = self.output_dir / "sim_history_company.csv"
         df_company.to_csv(out_company, index=False)
 
         print(f"\n📊 Simulation history written to:")
         print(f"  - {out_market.resolve()}")
+        print(f"  - {out_demand.resolve()}")
         print(f"  - {out_company.resolve()}")
 
     # ======================
@@ -357,12 +380,12 @@ class Sim:
     # ======================
 
     def _print_month_summary(self, tenders: list[Contract]) -> None:
-        m = self.market.month
-        print(f"\n=== Month {m:02d} | Oil ${self.market.oil_price:0.1f} ===")
+        m = self.oil_market.month
+        print(f"\n=== Month {m:02d} | Oil ${self.oil_market.oil_price:0.1f} | Steel ${self.steel_market.steel_price:0.0f} ===")
         print(
             f"Tenders: {len(tenders)} | "
-            f"Demand NS={self.market.demand_north_sea:0.2f} "
-            f"GOM={self.market.demand_gom:0.2f}"
+            f"Demand NS={self.oil_market.demand_north_sea:0.2f} "
+            f"GOM={self.oil_market.demand_gom:0.2f}"
         )
 
         for c in self.all_companies:
