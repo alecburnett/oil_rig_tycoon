@@ -6,8 +6,8 @@ A tycoon simulation where you run an offshore drilling contractor. You must mana
 
 1.  **Create a virtual environment**:
     ```bash
-    python3 -m venv .venv
-    source .venv/bin/activate
+    python3 -m venv rig_tycoon_env
+    source rig_tycoon_env/bin/activate
     ```
 
 2.  **Install dependencies**:
