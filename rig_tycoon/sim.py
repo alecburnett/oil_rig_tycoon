@@ -11,6 +11,7 @@ from .models import (
 )
 from .market import OilMarket, SteelMarket
 from .ai import AIPersonality, choose_bid
+from .contracts import ContractGenerator
 
 
 from datetime import datetime
@@ -36,6 +37,7 @@ class Sim:
         self.oil_market = OilMarket(rng=self.rng)
         self.steel_market = SteelMarket(rng=self.rng)
         self.contract_id_seq = 1
+        self.contract_gen = ContractGenerator(self.rng)
 
         self.player = self._make_player()
         self.ai_companies = self._make_ai()
@@ -195,47 +197,6 @@ class Sim:
     # Contracts
     # ======================
 
-    def _generate_contracts(self) -> list[Contract]:
-        tenders: list[Contract] = []
-
-        for region in (Region.NORTH_SEA, Region.GOM):
-            demand = self.oil_market.regional_demand(region)
-
-            n = max(0, int(round(demand + self.rng.random() * 1.5)))
-
-            for _ in range(n):
-                harsh = region == Region.NORTH_SEA and self.rng.random() < 0.45
-
-                rig_type = (
-                    RigType.SEMI if harsh and self.rng.random() < 0.6
-                    else RigType.JACKUP
-                )
-                months = self.rng.choice([6, 9, 12, 18, 24])
-                min_spec = 70 if harsh else self.rng.choice([55, 60, 65, 70])
-
-                base = 140 if rig_type == RigType.JACKUP else 260
-                oil_factor = (self.oil_market.oil_price - 40) / 50
-                max_dayrate = int(
-                    base * (0.65 + 0.65 * max(0.0, min(1.4, oil_factor)))
-                )
-                if harsh:
-                    max_dayrate = int(max_dayrate * 1.15)
-
-                spec = ContractSpec(
-                    region=region,
-                    months=months,
-                    rig_type=rig_type,
-                    min_spec=min_spec,
-                    harsh=harsh,
-                    max_dayrate=max_dayrate,
-                )
-
-                tenders.append(
-                    Contract(id=self.contract_id_seq, spec=spec)
-                )
-                self.contract_id_seq += 1
-
-        return tenders
 
     # ======================
     # Cashflows
@@ -347,7 +308,11 @@ class Sim:
         for _ in range(self.cfg.months):
             self.oil_market.step_month()
             self.steel_market.step_month()
-            tenders = self._generate_contracts()
+            tenders, self.contract_id_seq = self.contract_gen.generate(
+                market=self.oil_market,
+                regions=(Region.NORTH_SEA, Region.GOM),
+                next_contract_id=self.contract_id_seq,
+            )
             self._award_contracts(tenders)
             self._settle_month_cashflows()
             self._record_month()
