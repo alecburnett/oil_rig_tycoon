@@ -54,8 +54,33 @@ class OilMarket:
         self.demand_north_sea = 1.5 * mult
         self.demand_gom = 2.2 * mult
 
-    def regional_demand(self, region: Region) -> float:
-        return self.demand_north_sea if region == Region.NORTH_SEA else self.demand_gom
+    def to_dict(self) -> dict:
+        return {
+            "month": self.month,
+            "oil_price": self.oil_price,
+            "mean_price": self.mean_price,
+            "reversion": self.reversion,
+            "shock_sd": self.shock_sd,
+            "lag_months": self.lag_months,
+            "oil_history": list(self.oil_history),
+            "demand_north_sea": self.demand_north_sea,
+            "demand_gom": self.demand_gom,
+            # ... add other demand regions if they become dynamic
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict, rng: random.Random) -> OilMarket:
+        market = cls(rng=rng)
+        market.month = d["month"]
+        market.oil_price = d["oil_price"]
+        market.mean_price = d["mean_price"]
+        market.reversion = d["reversion"]
+        market.shock_sd = d["shock_sd"]
+        market.lag_months = d["lag_months"]
+        market.oil_history = deque(d["oil_history"], maxlen=36)
+        market.demand_north_sea = d["demand_north_sea"]
+        market.demand_gom = d["demand_gom"]
+        return market
 
 
 @dataclass
@@ -103,3 +128,32 @@ class SteelMarket:
 
         # base global demand tuned for steel-intensive construction cycles
         self.demand_global = 2.0 * mult
+
+    def to_dict(self) -> dict:
+        return {
+            "month": self.month,
+            "steel_price": self.steel_price,
+            "mean_price": self.mean_price,
+            "reversion": self.reversion,
+            "shock_sd": self.shock_sd,
+            "floor": self.floor,
+            "cap": self.cap,
+            "lag_months": self.lag_months,
+            "steel_history": list(self.steel_history),
+            "demand_global": self.demand_global,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict, rng: random.Random) -> SteelMarket:
+        market = cls(rng=rng)
+        market.month = d["month"]
+        market.steel_price = d["steel_price"]
+        market.mean_price = d["mean_price"]
+        market.reversion = d["reversion"]
+        market.shock_sd = d["shock_sd"]
+        market.floor = d["floor"]
+        market.cap = d["cap"]
+        market.lag_months = d["lag_months"]
+        market.steel_history = deque(d["steel_history"], maxlen=36)
+        market.demand_global = d["demand_global"]
+        return market

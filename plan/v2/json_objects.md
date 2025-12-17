@@ -92,8 +92,6 @@ All market state that affects future ticks must be saved **as-is**.
 "markets": {
   "oil": {
     "oil_price": 71.3,
-    "demand_north_sea": 1.42,
-    "demand_gom": 0.88,
     "trend": -0.03
   },
   "steel": {
@@ -120,7 +118,7 @@ Each company is self-contained and owns its rigs.
     "cash_musd": 42.7,
     "debt_musd": 15.0,
     "reputation": 0.56,
-    "rigs": [ ... ]
+    "rigs": ['1', '2', '3']
   }
 ]
 ```
@@ -131,6 +129,7 @@ Each company is self-contained and owns its rigs.
 "rigs": [
   {
     "rig_id": 1,
+    "model_id": 234,
     "rig_type": "JACKUP",
     "built": "2025-01-01",
     "max_water_depth_m": 76,

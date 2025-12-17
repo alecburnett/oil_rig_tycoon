@@ -11,10 +11,10 @@ from .models import (
 )
 from .market import OilMarket, SteelMarket
 from .ai import AIPersonality, choose_bid
-from .contracts import ContractGenerator
+from .contracts import ContractGenerator, Tender
 
 
-from datetime import datetime
+from datetime import datetime, date
 
 # ======================
 # Config
@@ -24,6 +24,7 @@ from datetime import datetime
 class SimConfig:
     seed: int = 7
     months: int = 36
+    start_year: int = 2025
 
 
 # ======================
@@ -65,6 +66,67 @@ class Sim:
         timestamp = datetime.now().isoformat(timespec="seconds").replace(":", "-")
         self.output_dir = Path("output") / timestamp
         self.output_dir.mkdir(parents=True, exist_ok=True)
+
+    # ======================
+    # Save / Load
+    # ======================
+
+    def to_dict(self) -> dict:
+        return {
+            "save_version": 1,
+            "meta": {
+                "created_at": datetime.now().isoformat(),
+                "game_version": "0.1.0",
+            },
+            "rng_state": list(self.rng.getstate()),
+            "time": {
+                "month": self.oil_market.month,
+            },
+            "markets": {
+                "oil": self.oil_market.to_dict(),
+                "steel": self.steel_market.to_dict(),
+            },
+            "companies": [c.to_dict() for c in self.all_companies],
+            "contract_id_seq": self.contract_id_seq,
+            "contract_gen": self.contract_gen.to_dict(),
+        }
+
+    @classmethod
+    def load(cls, path: str | Path) -> Sim:
+        import json
+        with open(path, "r") as f:
+            d = json.load(f)
+
+        # Create sim with dummy config, then overwrite
+        cfg = SimConfig(seed=0) # Seed will be overwritten by rng_state
+        sim = cls(cfg)
+        
+        state = d["rng_state"]
+        # random.setstate expects a 3-tuple, where the second element is a tuple of 624 ints
+        # JSON gives us lists, so we must convert them back.
+        state_tuple = (
+            state[0],
+            tuple(state[1]),
+            state[2]
+        )
+        sim.rng.setstate(state_tuple)
+        sim.contract_id_seq = d["contract_id_seq"]
+        
+        sim.oil_market = OilMarket.from_dict(d["markets"]["oil"], sim.rng)
+        sim.steel_market = SteelMarket.from_dict(d["markets"]["steel"], sim.rng)
+        sim.contract_gen = ContractGenerator.from_dict(d["contract_gen"], sim.rng)
+        
+        sim.all_companies = [Company.from_dict(c) for c in d["companies"]]
+        sim.player = next(c for c in sim.all_companies if c.name == "PlayerCo")
+        sim.ai_companies = [c for c in sim.all_companies if c.name != "PlayerCo"]
+
+        return sim
+
+    def save(self, path: str | Path) -> None:
+        import json
+        with open(path, "w") as f:
+            json.dump(self.to_dict(), f, indent=2)
+        print(f"💾 Game saved to {path}")
 
     # ======================
     # Logging
@@ -123,16 +185,16 @@ class Sim:
             Rig(
                 id=1,
                 rig_type=RigType.JACKUP,
-                age_years=8,
-                spec=78,
+                build_year=self.cfg.start_year - 8,
+                condition=78,
                 region=Region.NORTH_SEA,
                 state=RigState.WARM,
             ),
             Rig(
                 id=2,
                 rig_type=RigType.JACKUP,
-                age_years=15,
-                spec=62,
+                build_year=self.cfg.start_year - 15,
+                condition=62,
                 region=Region.GOM,
                 state=RigState.COLD,
             ),
@@ -152,16 +214,16 @@ class Sim:
                 Rig(
                     id=101,
                     rig_type=RigType.JACKUP,
-                    age_years=11,
-                    spec=74,
+                    build_year=self.cfg.start_year - 11,
+                    condition=74,
                     region=Region.NORTH_SEA,
                     state=RigState.WARM,
                 ),
                 Rig(
                     id=102,
                     rig_type=RigType.SEMI,
-                    age_years=9,
-                    spec=82,
+                    build_year=self.cfg.start_year - 9,
+                    condition=82,
                     region=Region.NORTH_SEA,
                     state=RigState.WARM,
                 ),
@@ -175,16 +237,16 @@ class Sim:
                 Rig(
                     id=201,
                     rig_type=RigType.SEMI,
-                    age_years=6,
-                    spec=90,
+                    build_year=self.cfg.start_year - 6,
+                    condition=90,
                     region=Region.GOM,
                     state=RigState.WARM,
                 ),
                 Rig(
                     id=202,
                     rig_type=RigType.JACKUP,
-                    age_years=18,
-                    spec=58,
+                    build_year=self.cfg.start_year - 18,
+                    condition=58,
                     region=Region.GOM,
                     state=RigState.COLD,
                 ),
@@ -203,6 +265,7 @@ class Sim:
     # ======================
 
     def _settle_month_cashflows(self) -> None:
+        current_year = self.cfg.start_year + self.oil_market.month // 12
         for c in self.all_companies:
             rev_musd = 0.0
             cost_musd = 0.0
@@ -213,7 +276,7 @@ class Sim:
 
                 if r.on_contract_months_left > 0:
                     rev_musd += (r.contract_dayrate * 30) / 1000.0
-                    cost_musd += (r.opex_per_day_k() * 30) / 1000.0
+                    cost_musd += (r.opex_per_day_k(current_year) * 30) / 1000.0
 
                     r.on_contract_months_left -= 1
                     if r.on_contract_months_left == 0:
@@ -231,7 +294,7 @@ class Sim:
     # Auction
     # ======================
 
-    def _award_contracts(self, tenders: list[Contract]) -> None:
+    def _award_contracts(self, tenders: list[Tender]) -> None:
         for t in tenders:
             bids: list[tuple[str, int, int]] = []
 
@@ -277,14 +340,15 @@ class Sim:
                 continue
             if r.region != tender.spec.region:
                 continue
-            if r.spec < tender.spec.min_spec:
+            if r.condition < tender.spec.min_condition:
                 continue
             candidates.append(r)
 
         if not candidates:
             return None
 
-        candidates.sort(key=lambda r: (r.opex_per_day_k(), -r.spec))
+        current_year = tender.spec.start_date.year
+        candidates.sort(key=lambda r: (r.opex_per_day_k(current_year), -r.condition))
         rig = candidates[0]
 
         softness = 1.0 - min(
@@ -294,7 +358,7 @@ class Sim:
         discount = int((0.08 + 0.22 * softness) * tender.spec.max_dayrate)
         dayrate = tender.spec.max_dayrate - discount
 
-        breakeven = rig.opex_per_day_k() + 12
+        breakeven = rig.opex_per_day_k(current_year) + 12
         if dayrate < breakeven - 8:
             return None
 
@@ -308,10 +372,15 @@ class Sim:
         for _ in range(self.cfg.months):
             self.oil_market.step_month()
             self.steel_market.step_month()
-            tenders, self.contract_id_seq = self.contract_gen.generate(
-                market=self.oil_market,
-                regions=(Region.NORTH_SEA, Region.GOM),
+            # Calculate approximate date for contracts
+            year = self.cfg.start_year + (self.oil_market.month // 12)
+            month = (self.oil_market.month % 12) + 1
+            as_of_date = date(year, month, 1)
+
+            tenders, self.contract_id_seq = self.contract_gen.generate_tick(
+                regions=["NORTH_SEA", "GOM"],
                 next_contract_id=self.contract_id_seq,
+                as_of_date=as_of_date,
             )
             self._award_contracts(tenders)
             self._settle_month_cashflows()
@@ -334,10 +403,15 @@ class Sim:
         out_company = self.output_dir / "simulation_output_company.csv"
         df_company.to_csv(out_company, index=False)
 
+        # Save final state JSON
+        out_save = self.output_dir / "final_state.json"
+        self.save(out_save)
+
         print(f"\n📊 Simulation history written to:")
         print(f"  - {out_market.resolve()}")
         print(f"  - {out_demand.resolve()}")
         print(f"  - {out_company.resolve()}")
+        print(f"  - {out_save.resolve()}")
 
     # ======================
     # Output

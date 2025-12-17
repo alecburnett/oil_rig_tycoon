@@ -49,29 +49,62 @@ class PositioningRequired(Enum):
 
 
 @dataclass(frozen=True)
-class Contract:
+class Tender:
     id: int
+    spec: ContractSpec
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "spec": {
+                "contract_type": self.spec.contract_type.name,
+                "region": self.spec.region,
+                "start_date": self.spec.start_date.isoformat(),
+                "duration_months": self.spec.duration_months,
+                "water_depth_m": self.spec.water_depth_m,
+                "harsh_required": self.spec.harsh_required,
+                "rig_type": self.spec.rig_type.name,
+                "positioning_required": self.spec.positioning_required.name,
+                "min_condition": self.spec.min_condition,
+                "dayrate_k_min": self.spec.dayrate_k_min,
+                "dayrate_k_max": self.spec.dayrate_k_max,
+                "early_termination_penalty_k": self.spec.early_termination_penalty_k,
+            }
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> Tender:
+        s = d["spec"]
+        spec = TenderSpec(
+            contract_type=ContractType[s["contract_type"]],
+            region=s["region"],
+            start_date=date.fromisoformat(s["start_date"]),
+            duration_months=s["duration_months"],
+            water_depth_m=s["water_depth_m"],
+            harsh_required=s["harsh_required"],
+            rig_type=RigClassRequired[s["rig_type"]],
+            positioning_required=PositioningRequired[s["positioning_required"]],
+            min_condition=s["min_condition"],
+            dayrate_k_min=s["dayrate_k_min"],
+            dayrate_k_max=s["dayrate_k_max"],
+            early_termination_penalty_k=s["early_termination_penalty_k"]
+        )
+        return cls(id=d["id"], spec=spec)
+
+
+@dataclass(frozen=True)
+class TenderSpec:
     contract_type: ContractType
     region: str
-
-    # Timing
     start_date: date
     duration_months: int
-
-    # Physical requirements
     water_depth_m: int
     harsh_required: bool
-
-    # Rig requirements
-    rig_class_required: RigClassRequired
+    rig_type: RigClassRequired
     positioning_required: PositioningRequired
-
-    # Commercials
+    min_condition: int
     dayrate_k_min: int
     dayrate_k_max: int
-
-    # Penalty for not concluding work (early termination)
-    # In $k (thousands of dollars)
     early_termination_penalty_k: int
 
 
@@ -327,25 +360,56 @@ class ContractGenerator:
                 harsh=harsh,
             )
 
+            # min_condition for tender: base on contract type
+            if ctype == ContractType.EXPLORATION:
+                min_condition = 75
+            elif ctype == ContractType.DEVELOPMENT:
+                min_condition = 65
+            else:
+                min_condition = 50
+
             out.append(
-                Contract(
+                Tender(
                     id=cid,
-                    contract_type=ctype,
-                    region=region,
-                    start_date=start,
-                    duration_months=duration_months,
-                    water_depth_m=water_depth_m,
-                    harsh_required=harsh,
-                    rig_class_required=rig_class,
-                    positioning_required=positioning,
-                    dayrate_k_min=dayrate_k_min,
-                    dayrate_k_max=dayrate_k_max,
-                    early_termination_penalty_k=penalty_k,
+                    spec=TenderSpec(
+                        contract_type=ctype,
+                        region=region,
+                        start_date=start,
+                        duration_months=duration_months,
+                        water_depth_m=water_depth_m,
+                        harsh_required=harsh,
+                        rig_type=rig_class,
+                        positioning_required=positioning,
+                        min_condition=min_condition,
+                        dayrate_k_min=dayrate_k_min,
+                        dayrate_k_max=dayrate_k_max,
+                        early_termination_penalty_k=penalty_k,
+                    )
                 )
             )
             cid += 1
 
         return out, cid
+
+    def to_dict(self) -> dict:
+        # We'll save the config but only the parts that are likely to change or matter
+        return {
+            "config": {
+                "base_tenders_per_region": self.cfg.base_tenders_per_region,
+                "noise_max": self.cfg.noise_max,
+                # For brevity, let's assume default config for now unless user needs it saved.
+                # If we want full fidelity, we'd serialize the whole cfg.
+            }
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict, rng: random.Random) -> ContractGenerator:
+        # For now, just restore default config with d['config'] overrides if any
+        cfg = ContractGenConfig()
+        if "config" in d:
+            cfg.base_tenders_per_region = d["config"].get("base_tenders_per_region", cfg.base_tenders_per_region)
+            cfg.noise_max = d["config"].get("noise_max", cfg.noise_max)
+        return cls(rng=rng, cfg=cfg)
 
 
 # -----------------------------
