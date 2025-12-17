@@ -20,17 +20,8 @@ class OilMarket:
     lag_months: int = 9
     oil_history: deque[float] = field(default_factory=lambda: deque(maxlen=36))
 
-    # demand by region (rig-months per month)
-    demand_north_sea: float = 2.0
-    demand_gom: float = 2.5
-    demand_sea: float = 2.0
-    demand_india: float = 2.0
-    demand_middle_east: float = 3.0
-    demand_west_africa: float = 1.5
-    demand_east_africa: float = 0.5
-    demand_brazil: float = 2.0
-    demand_arctic: float = 0.5
-    demand_barents: float = 1
+    # global demand factor (0.4 to 1.8)
+    demand_factor: float = 1.0
 
     def step_month(self) -> None:
         self.month += 1
@@ -48,14 +39,37 @@ class OilMarket:
 
         # map lag_price -> demand multiplier
         # 50 => weak, 80 => strong, 110 => boom
-        mult = max(0.4, min(1.8, (lag_price - 30) / 50))
+        self.demand_factor = max(0.4, min(1.8, (lag_price - 30) / 50))
 
-        # region sensitivities
-        self.demand_north_sea = 1.5 * mult
-        self.demand_gom = 2.2 * mult
+    @property
+    def oil_factor(self) -> float:
+        # ~0.6 bust .. 1.4 boom, centered at $70
+        return max(0.6, min(1.4, self.oil_price / 70.0))
 
-    def regional_demand(self, region: Region) -> float:
-        return self.demand_north_sea if region == Region.NORTH_SEA else self.demand_gom
+    def to_dict(self) -> dict:
+        return {
+            "month": self.month,
+            "oil_price": self.oil_price,
+            "mean_price": self.mean_price,
+            "reversion": self.reversion,
+            "shock_sd": self.shock_sd,
+            "lag_months": self.lag_months,
+            "oil_history": list(self.oil_history),
+            "demand_factor": self.demand_factor,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict, rng: random.Random) -> OilMarket:
+        market = cls(rng=rng)
+        market.month = d["month"]
+        market.oil_price = d["oil_price"]
+        market.mean_price = d["mean_price"]
+        market.reversion = d["reversion"]
+        market.shock_sd = d["shock_sd"]
+        market.lag_months = d["lag_months"]
+        market.oil_history = deque(d["oil_history"], maxlen=36)
+        market.demand_factor = d.get("demand_factor", 1.0)
+        return market
 
 
 @dataclass
@@ -103,3 +117,32 @@ class SteelMarket:
 
         # base global demand tuned for steel-intensive construction cycles
         self.demand_global = 2.0 * mult
+
+    def to_dict(self) -> dict:
+        return {
+            "month": self.month,
+            "steel_price": self.steel_price,
+            "mean_price": self.mean_price,
+            "reversion": self.reversion,
+            "shock_sd": self.shock_sd,
+            "floor": self.floor,
+            "cap": self.cap,
+            "lag_months": self.lag_months,
+            "steel_history": list(self.steel_history),
+            "demand_global": self.demand_global,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict, rng: random.Random) -> SteelMarket:
+        market = cls(rng=rng)
+        market.month = d["month"]
+        market.steel_price = d["steel_price"]
+        market.mean_price = d["mean_price"]
+        market.reversion = d["reversion"]
+        market.shock_sd = d["shock_sd"]
+        market.floor = d["floor"]
+        market.cap = d["cap"]
+        market.lag_months = d["lag_months"]
+        market.steel_history = deque(d["steel_history"], maxlen=36)
+        market.demand_global = d["demand_global"]
+        return market

@@ -10,20 +10,24 @@ class AIPersonality:
     quality_bias: float    # 0-1 (prefers high spec work)
 
 
-def estimate_break_even_dayrate_k(company: Company, rig_id: int) -> int:
+def estimate_break_even_dayrate_k(company: Company, rig_id: int, current_year: int) -> int:
     rig = next(r for r in company.rigs if r.id == rig_id)
-    opex = rig.opex_per_day_k()
+    opex = rig.opex_per_day_k(current_year)
     # rough overhead + G&A
     overhead = 12
     # older rigs often need more maintenance
-    maint = max(0, rig.age_years - 12)
+    age = max(0, current_year - rig.build_year)
+    maint = max(0, age - 12)
     return opex + overhead + maint
 
 
-def choose_bid(company: Company, personality: AIPersonality, tender: Contract) -> tuple[int, int] | None:
+def choose_bid(company: Company, personality: AIPersonality, tender: Tender) -> tuple[int, int] | None:
     """
     Returns (rig_id, dayrate_k) or None to not bid.
     """
+    # use tender start date as the "year" for bidding decisions
+    current_year = tender.spec.start_date.year
+
     # pick best available rig for spec/region/type
     candidates = []
     for rig in company.rigs:
@@ -35,18 +39,18 @@ def choose_bid(company: Company, personality: AIPersonality, tender: Contract) -
             continue
         if rig.region != tender.spec.region:
             continue
-        if rig.spec < tender.spec.min_spec:
+        if rig.condition < tender.spec.min_condition:
             continue
         candidates.append(rig)
 
     if not candidates:
         return None
 
-    # prefer closer-to-required spec unless quality_bias high
-    candidates.sort(key=lambda r: (abs(r.spec - tender.spec.min_spec) * (1 - personality.quality_bias), -r.spec))
+    # prefer closer-to-required condition unless quality_bias high
+    candidates.sort(key=lambda r: (abs(r.condition - tender.spec.min_condition) * (1 - personality.quality_bias), -r.condition))
     rig = candidates[0]
 
-    breakeven = estimate_break_even_dayrate_k(company, rig.id)
+    breakeven = estimate_break_even_dayrate_k(company, rig.id, current_year)
 
     # AI pricing: start from max willingness and shade down
     # aggressiveness => larger discount
