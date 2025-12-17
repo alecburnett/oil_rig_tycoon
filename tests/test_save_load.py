@@ -28,6 +28,8 @@ def test_save_load():
             regions=["NORTH_SEA", "GOM"],
             next_contract_id=sim1.contract_id_seq,
             as_of_date=test_date,
+            oil_factor=sim1.oil_market.oil_factor,
+            demand_factor=sim1.oil_market.demand_factor,
         )
         sim1._award_contracts(tenders)
         sim1._settle_month_cashflows()
@@ -51,6 +53,8 @@ def test_save_load():
             regions=["NORTH_SEA", "GOM"],
             next_contract_id=sim1.contract_id_seq,
             as_of_date=test_date,
+            oil_factor=sim1.oil_market.oil_factor,
+            demand_factor=sim1.oil_market.demand_factor,
         )
         sim1._award_contracts(tenders1)
         sim1._settle_month_cashflows()
@@ -63,6 +67,8 @@ def test_save_load():
             regions=["NORTH_SEA", "GOM"],
             next_contract_id=sim2.contract_id_seq,
             as_of_date=test_date,
+            oil_factor=sim2.oil_market.oil_factor,
+            demand_factor=sim2.oil_market.demand_factor,
         )
         sim2._award_contracts(tenders2)
         sim2._settle_month_cashflows()

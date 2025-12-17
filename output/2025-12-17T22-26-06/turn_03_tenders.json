@@ -1,0 +1,19 @@
+[
+  {
+    "id": 4,
+    "spec": {
+      "contract_type": "DEVELOPMENT",
+      "region": "NORTH_SEA",
+      "start_date": "2025-06-01",
+      "duration_months": 6,
+      "water_depth_m": 106,
+      "harsh_required": false,
+      "rig_type": "JACKUP",
+      "positioning_required": "ANY",
+      "min_condition": 65,
+      "dayrate_k_min": 87,
+      "dayrate_k_max": 117,
+      "early_termination_penalty_k": 10530
+    }
+  }
+]

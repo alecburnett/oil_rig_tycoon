@@ -1,0 +1,36 @@
+[
+  {
+    "id": 67,
+    "spec": {
+      "contract_type": "WORKOVER",
+      "region": "NORTH_SEA",
+      "start_date": "2027-09-01",
+      "duration_months": 1,
+      "water_depth_m": 41,
+      "harsh_required": false,
+      "rig_type": "JACKUP",
+      "positioning_required": "ANY",
+      "min_condition": 50,
+      "dayrate_k_min": 90,
+      "dayrate_k_max": 120,
+      "early_termination_penalty_k": 3600
+    }
+  },
+  {
+    "id": 68,
+    "spec": {
+      "contract_type": "DEVELOPMENT",
+      "region": "NORTH_SEA",
+      "start_date": "2027-09-01",
+      "duration_months": 24,
+      "water_depth_m": 369,
+      "harsh_required": true,
+      "rig_type": "SEMI",
+      "positioning_required": "DP_REQUIRED",
+      "min_condition": 65,
+      "dayrate_k_min": 248,
+      "dayrate_k_max": 331,
+      "early_termination_penalty_k": 39720
+    }
+  }
+]

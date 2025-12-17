@@ -1,0 +1,53 @@
+[
+  {
+    "id": 59,
+    "spec": {
+      "contract_type": "WORKOVER",
+      "region": "GOM",
+      "start_date": "2027-07-01",
+      "duration_months": 3,
+      "water_depth_m": 60,
+      "harsh_required": false,
+      "rig_type": "JACKUP",
+      "positioning_required": "ANY",
+      "min_condition": 50,
+      "dayrate_k_min": 90,
+      "dayrate_k_max": 120,
+      "early_termination_penalty_k": 3600
+    }
+  },
+  {
+    "id": 60,
+    "spec": {
+      "contract_type": "DEVELOPMENT",
+      "region": "GOM",
+      "start_date": "2027-05-01",
+      "duration_months": 12,
+      "water_depth_m": 195,
+      "harsh_required": false,
+      "rig_type": "SEMI",
+      "positioning_required": "MORED_OK",
+      "min_condition": 65,
+      "dayrate_k_min": 180,
+      "dayrate_k_max": 240,
+      "early_termination_penalty_k": 21600
+    }
+  },
+  {
+    "id": 61,
+    "spec": {
+      "contract_type": "DEVELOPMENT",
+      "region": "NORTH_SEA",
+      "start_date": "2027-07-01",
+      "duration_months": 18,
+      "water_depth_m": 273,
+      "harsh_required": true,
+      "rig_type": "SEMI",
+      "positioning_required": "MORED_OK",
+      "min_condition": 65,
+      "dayrate_k_min": 207,
+      "dayrate_k_max": 276,
+      "early_termination_penalty_k": 33120
+    }
+  }
+]

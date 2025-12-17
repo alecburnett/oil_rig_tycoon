@@ -1,0 +1,36 @@
+[
+  {
+    "id": 1,
+    "spec": {
+      "contract_type": "EXPLORATION",
+      "region": "NORTH_SEA",
+      "start_date": "2025-03-01",
+      "duration_months": 9,
+      "water_depth_m": 1043,
+      "harsh_required": true,
+      "rig_type": "SEMI_OR_DRILLSHIP",
+      "positioning_required": "MORED_OK",
+      "min_condition": 75,
+      "dayrate_k_min": 228,
+      "dayrate_k_max": 326,
+      "early_termination_penalty_k": 29340
+    }
+  },
+  {
+    "id": 2,
+    "spec": {
+      "contract_type": "WORKOVER",
+      "region": "NORTH_SEA",
+      "start_date": "2025-02-01",
+      "duration_months": 1,
+      "water_depth_m": 104,
+      "harsh_required": false,
+      "rig_type": "JACKUP",
+      "positioning_required": "ANY",
+      "min_condition": 50,
+      "dayrate_k_min": 90,
+      "dayrate_k_max": 120,
+      "early_termination_penalty_k": 3600
+    }
+  }
+]

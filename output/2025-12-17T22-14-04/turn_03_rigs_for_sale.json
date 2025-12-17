@@ -1,0 +1,15 @@
+[
+  {
+    "rig": {
+      "id": 5,
+      "model_id": "10",
+      "rig_type": "jackup",
+      "build_year": 1994,
+      "condition": 64,
+      "region": "north_sea",
+      "state": "cold",
+      "location_id": "12"
+    },
+    "price_musd": 21.1
+  }
+]

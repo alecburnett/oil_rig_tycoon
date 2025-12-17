@@ -22,6 +22,8 @@ def generate_saves():
             regions=["NORTH_SEA", "GOM"],
             next_contract_id=sim.contract_id_seq,
             as_of_date=test_date,
+            oil_factor=sim.oil_market.oil_factor,
+            demand_factor=sim.oil_market.demand_factor,
         )
         sim._award_contracts(tenders)
         sim._settle_month_cashflows()

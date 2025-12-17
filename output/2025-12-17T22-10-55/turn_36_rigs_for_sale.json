@@ -1,0 +1,28 @@
+[
+  {
+    "rig": {
+      "id": 81,
+      "model_id": "7",
+      "rig_type": "drillship",
+      "build_year": 2023,
+      "condition": 34,
+      "region": "north_sea",
+      "state": "cold",
+      "location_id": "20"
+    },
+    "price_musd": 25.0
+  },
+  {
+    "rig": {
+      "id": 82,
+      "model_id": "6",
+      "rig_type": "jackup",
+      "build_year": 2003,
+      "condition": 46,
+      "region": "gom",
+      "state": "cold",
+      "location_id": "20"
+    },
+    "price_musd": 15.5
+  }
+]

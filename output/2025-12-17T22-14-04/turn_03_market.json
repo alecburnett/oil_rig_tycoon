@@ -1,0 +1,32 @@
+{
+  "oil": {
+    "month": 3,
+    "oil_price": 68.76598403132128,
+    "mean_price": 70.0,
+    "reversion": 0.08,
+    "shock_sd": 5.0,
+    "lag_months": 9,
+    "oil_history": [
+      68.720598557762,
+      67.27358851737213,
+      68.76598403132128
+    ],
+    "demand_factor": 0.7753196806264256
+  },
+  "steel": {
+    "month": 3,
+    "steel_price": 780.5805787106902,
+    "mean_price": 800.0,
+    "reversion": 0.1,
+    "shock_sd": 60.0,
+    "floor": 350.0,
+    "cap": 1800.0,
+    "lag_months": 6,
+    "steel_history": [
+      830.6858907509909,
+      816.9353437685202,
+      780.5805787106902
+    ],
+    "demand_global": 1.322322314842761
+  }
+}

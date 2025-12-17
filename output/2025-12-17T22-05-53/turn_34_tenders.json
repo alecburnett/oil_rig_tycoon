@@ -1,0 +1,19 @@
+[
+  {
+    "id": 73,
+    "spec": {
+      "contract_type": "EXPLORATION",
+      "region": "NORTH_SEA",
+      "start_date": "2028-02-01",
+      "duration_months": 3,
+      "water_depth_m": 1019,
+      "harsh_required": false,
+      "rig_type": "SEMI_OR_DRILLSHIP",
+      "positioning_required": "MORED_OK",
+      "min_condition": 75,
+      "dayrate_k_min": 198,
+      "dayrate_k_max": 283,
+      "early_termination_penalty_k": 16980
+    }
+  }
+]

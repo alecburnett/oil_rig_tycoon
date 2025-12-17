@@ -1,0 +1,36 @@
+[
+  {
+    "id": 79,
+    "spec": {
+      "contract_type": "DEVELOPMENT",
+      "region": "NORTH_SEA",
+      "start_date": "2028-04-01",
+      "duration_months": 9,
+      "water_depth_m": 490,
+      "harsh_required": false,
+      "rig_type": "SEMI",
+      "positioning_required": "MORED_OK",
+      "min_condition": 65,
+      "dayrate_k_min": 180,
+      "dayrate_k_max": 240,
+      "early_termination_penalty_k": 21600
+    }
+  },
+  {
+    "id": 80,
+    "spec": {
+      "contract_type": "DEVELOPMENT",
+      "region": "NORTH_SEA",
+      "start_date": "2028-04-01",
+      "duration_months": 18,
+      "water_depth_m": 296,
+      "harsh_required": false,
+      "rig_type": "SEMI",
+      "positioning_required": "MORED_OK",
+      "min_condition": 65,
+      "dayrate_k_min": 180,
+      "dayrate_k_max": 240,
+      "early_termination_penalty_k": 21600
+    }
+  }
+]

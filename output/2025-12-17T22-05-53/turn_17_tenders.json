@@ -1,0 +1,19 @@
+[
+  {
+    "id": 36,
+    "spec": {
+      "contract_type": "EXPLORATION",
+      "region": "GOM",
+      "start_date": "2026-08-01",
+      "duration_months": 12,
+      "water_depth_m": 1350,
+      "harsh_required": false,
+      "rig_type": "DRILLSHIP",
+      "positioning_required": "MORED_OK",
+      "min_condition": 75,
+      "dayrate_k_min": 220,
+      "dayrate_k_max": 315,
+      "early_termination_penalty_k": 18900
+    }
+  }
+]

@@ -1,0 +1,19 @@
+[
+  {
+    "id": 3,
+    "spec": {
+      "contract_type": "EXPLORATION",
+      "region": "NORTH_SEA",
+      "start_date": "2025-05-01",
+      "duration_months": 6,
+      "water_depth_m": 1651,
+      "harsh_required": true,
+      "rig_type": "DRILLSHIP",
+      "positioning_required": "DP_REQUIRED",
+      "min_condition": 75,
+      "dayrate_k_min": 291,
+      "dayrate_k_max": 417,
+      "early_termination_penalty_k": 37530
+    }
+  }
+]

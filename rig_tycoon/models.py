@@ -96,19 +96,35 @@ class Rig:
     on_contract_months_left: int = 0
     contract_dayrate: int = 0      # $k/day
     contract_id: Optional[int] = None
+    location_id: Optional[str] = None
+    model_id: Optional[str] = None
+    company_id: Optional[int] = None
 
     def to_dict(self) -> dict:
-        return {
+        out = {
             "id": self.id,
+        }
+        if self.model_id is not None:
+            out["model_id"] = self.model_id
+            
+        out.update({
             "rig_type": self.rig_type.value,
             "build_year": self.build_year,
             "condition": self.condition,
             "region": self.region.value,
             "state": self.state.value,
-            "on_contract_months_left": self.on_contract_months_left,
-            "contract_dayrate": self.contract_dayrate,
-            "contract_id": self.contract_id,
-        }
+        })
+        if self.on_contract_months_left > 0:
+            out["on_contract_months_left"] = self.on_contract_months_left
+        if self.contract_dayrate > 0:
+            out["contract_dayrate"] = self.contract_dayrate
+        if self.contract_id is not None:
+            out["contract_id"] = self.contract_id
+        if self.location_id is not None:
+            out["location_id"] = self.location_id
+        if self.company_id is not None:
+            out["company_id"] = self.company_id
+        return out
 
     @classmethod
     def from_dict(cls, d: dict) -> Rig:
@@ -119,9 +135,12 @@ class Rig:
             condition=d["condition"],
             region=Region(d["region"]),
             state=RigState(d["state"]),
-            on_contract_months_left=d["on_contract_months_left"],
-            contract_dayrate=d["contract_dayrate"],
+            on_contract_months_left=d.get("on_contract_months_left", 0),
+            contract_dayrate=d.get("contract_dayrate", 0),
             contract_id=d.get("contract_id"),
+            location_id=d.get("location_id"),
+            model_id=d.get("model_id"),
+            company_id=d.get("company_id"),
         )
 
     @property
@@ -148,27 +167,49 @@ class Rig:
 
 @dataclass
 class Company:
+    id: int
     name: str
     cash_musd: float
     rigs: list[Rig] = field(default_factory=list)
-    reputation: float = 0.5     # 0-1
     debt_musd: float = 0.0
+    reputation: float = 0.5
 
     def to_dict(self) -> dict:
         return {
+            "id": self.id,
             "name": self.name,
             "cash_musd": self.cash_musd,
             "reputation": self.reputation,
             "debt_musd": self.debt_musd,
-            "rigs": [r.to_dict() for r in self.rigs],
+            "rigs": [{"id": r.id, "location_id": r.location_id} for r in self.rigs],
         }
 
     @classmethod
-    def from_dict(cls, d: dict) -> Company:
+    def from_dict(cls, d: dict, rig_map: dict[int, Rig] | None = None) -> Company:
+        rigs = []
+        if rig_map:
+            for r_data in d["rigs"]:
+                rid = r_data["id"]
+                if rid in rig_map:
+                    rigs.append(rig_map[rid])
+        
         return cls(
+            id=d["id"],
             name=d["name"],
             cash_musd=d["cash_musd"],
             reputation=d["reputation"],
             debt_musd=d["debt_musd"],
-            rigs=[Rig.from_dict(r) for r in d["rigs"]],
+            rigs=rigs,
         )
+
+
+@dataclass
+class RigForSale:
+    rig: Rig
+    price_musd: float
+
+    def to_dict(self) -> dict:
+        return {
+            "rig": self.rig.to_dict(),
+            "price_musd": self.price_musd,
+        }

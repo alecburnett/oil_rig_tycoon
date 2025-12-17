@@ -1,0 +1,19 @@
+[
+  {
+    "id": 31,
+    "spec": {
+      "contract_type": "WORKOVER",
+      "region": "GOM",
+      "start_date": "2026-05-01",
+      "duration_months": 4,
+      "water_depth_m": 92,
+      "harsh_required": false,
+      "rig_type": "JACKUP",
+      "positioning_required": "ANY",
+      "min_condition": 50,
+      "dayrate_k_min": 90,
+      "dayrate_k_max": 120,
+      "early_termination_penalty_k": 3600
+    }
+  }
+]

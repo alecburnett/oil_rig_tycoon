@@ -1,0 +1,15 @@
+[
+  {
+    "rig": {
+      "id": 57,
+      "model_id": "14",
+      "rig_type": "drillship",
+      "build_year": 2014,
+      "condition": 86,
+      "region": "north_sea",
+      "state": "cold",
+      "location_id": "14"
+    },
+    "price_musd": 46.9
+  }
+]

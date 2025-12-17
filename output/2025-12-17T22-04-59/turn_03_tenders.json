@@ -1,0 +1,19 @@
+[
+  {
+    "id": 5,
+    "spec": {
+      "contract_type": "EXPLORATION",
+      "region": "GOM",
+      "start_date": "2025-04-01",
+      "duration_months": 6,
+      "water_depth_m": 1876,
+      "harsh_required": false,
+      "rig_type": "DRILLSHIP",
+      "positioning_required": "DP_REQUIRED",
+      "min_condition": 75,
+      "dayrate_k_min": 264,
+      "dayrate_k_max": 378,
+      "early_termination_penalty_k": 22680
+    }
+  }
+]

@@ -1,0 +1,15 @@
+[
+  {
+    "rig": {
+      "id": 29,
+      "model_id": "5",
+      "rig_type": "semisub",
+      "build_year": 2007,
+      "condition": 67,
+      "region": "gom",
+      "state": "cold",
+      "location_id": "12"
+    },
+    "price_musd": 77.3
+  }
+]
