@@ -63,6 +63,7 @@ class Sim:
         # logging
         self.market_history: list[dict] = []
         self.company_history: list[dict] = []
+        self.current_tenders: list[Tender] = []
         
         timestamp = datetime.now().isoformat(timespec="seconds").replace(":", "-")
         self.output_dir = Path("output") / timestamp
@@ -292,6 +293,7 @@ class Sim:
                     if r.on_contract_months_left == 0:
                         r.contract_dayrate = 0
                         r.state = RigState.WARM
+                        r.contract_id = None
                 else:
                     cost_musd += r.stacking_cost_per_month_k() / 1000.0
 
@@ -336,6 +338,118 @@ class Sim:
             rig.on_contract_months_left = t.spec.months
             rig.contract_dayrate = dayrate
             rig.state = RigState.ACTIVE
+            rig.contract_id = t.id
+
+    # ======================
+    # Views / UI accessors
+    # ======================
+
+    def _current_year(self) -> int:
+        return self.cfg.start_year + self.oil_market.month // 12
+
+    def _get_company(self, name: str) -> Company:
+        try:
+            return next(c for c in self.all_companies if c.name == name)
+        except StopIteration:
+            raise ValueError(f"Company '{name}' not found. Known: {[c.name for c in self.all_companies]}")
+
+    def _forecast_monthly_financials(self, company: Company) -> tuple[float, float]:
+        """
+        Compute monthly revenue and opex (MUSD) without mutating state.
+        """
+        year = self._current_year()
+        revenue_musd = 0.0
+        opex_musd = 0.0
+        for r in company.rigs:
+            if r.state == RigState.SCRAP:
+                continue
+            if r.on_contract_months_left > 0:
+                revenue_musd += (r.contract_dayrate * 30) / 1000.0
+                opex_musd += (r.opex_per_day_k(year) * 30) / 1000.0
+            else:
+                opex_musd += r.stacking_cost_per_month_k() / 1000.0
+        if company.debt_musd > 0:
+            opex_musd += company.debt_musd * 0.008
+        return revenue_musd, opex_musd
+
+    def get_open_tenders(self) -> list[dict]:
+        """
+        Return the most recently generated tenders (pre-award) in dict form.
+        """
+        return [t.to_dict() for t in self.current_tenders]
+
+    def get_company_fleet(self, company_name: str = "PlayerCo") -> list[dict]:
+        """
+        Snapshot of a company's rigs: specs, location, and live contract info.
+        """
+        company = self._get_company(company_name)
+        out = []
+        for r in company.rigs:
+            out.append({
+                "id": r.id,
+                "type": r.rig_type.value,
+                "build_year": r.build_year,
+                "condition": r.condition,
+                "region": r.region.value,
+                "state": r.state.value,
+                "location_id": r.location_id,
+                "model_id": r.model_id,
+                "on_contract_months_left": r.on_contract_months_left,
+                "contract_dayrate_k": r.contract_dayrate,
+                "contract_id": r.contract_id,
+            })
+        return out
+
+    def get_company_schedule(self, company_name: str = "PlayerCo") -> list[dict]:
+        """
+        Compact view of per-rig schedules and availability.
+        """
+        company = self._get_company(company_name)
+        items = []
+        for r in company.rigs:
+            items.append({
+                "rig_id": r.id,
+                "state": r.state.value,
+                "months_left": r.on_contract_months_left,
+                "contract_id": r.contract_id,
+                "region": r.region.value,
+                "available": r.is_available,
+            })
+        return items
+
+    def get_company_backlog(self, company_name: str = "PlayerCo") -> list[dict]:
+        """
+        Active contracts with remaining duration and revenue potential.
+        """
+        company = self._get_company(company_name)
+        backlog = []
+        for r in company.rigs:
+            if r.on_contract_months_left <= 0:
+                continue
+            backlog.append({
+                "rig_id": r.id,
+                "contract_id": r.contract_id,
+                "months_left": r.on_contract_months_left,
+                "dayrate_k": r.contract_dayrate,
+                "region": r.region.value,
+                "est_monthly_revenue_musd": (r.contract_dayrate * 30) / 1000.0,
+            })
+        return backlog
+
+    def get_company_finances(self, company_name: str = "PlayerCo") -> dict:
+        """
+        Returns cash, debt, and simple monthly P&L forecast.
+        """
+        company = self._get_company(company_name)
+        revenue_musd, opex_musd = self._forecast_monthly_financials(company)
+        return {
+            "cash_musd": company.cash_musd,
+            "debt_musd": company.debt_musd,
+            "reputation": company.reputation,
+            "revenue_musd_month": revenue_musd,
+            "opex_musd_month": opex_musd,
+            "net_musd_month": revenue_musd - opex_musd,
+        }
 
     # ======================
     # Player bidding (auto)
@@ -394,6 +508,7 @@ class Sim:
                 oil_factor=oil_factor,
                 demand_factor=self.oil_market.demand_factor,
             )
+            self.current_tenders = tenders
             self._award_contracts(tenders)
             self._settle_month_cashflows()
             self._record_month()
