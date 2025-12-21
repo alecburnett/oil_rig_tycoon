@@ -1,6 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from .models import Company, Contract, RigState
+from .models import Company, RigState
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .contracts import Tender
 
 
 @dataclass(frozen=True)
@@ -35,7 +39,8 @@ def choose_bid(company: Company, personality: AIPersonality, tender: Tender) -> 
             continue
         if rig.state == RigState.SCRAP:
             continue
-        if rig.rig_type != tender.spec.rig_type:
+        from .contracts import rig_matches_class
+        if not rig_matches_class(rig.rig_type, tender.spec.rig_type):
             continue
         if rig.region != tender.spec.region:
             continue
@@ -72,3 +77,41 @@ def choose_bid(company: Company, personality: AIPersonality, tender: Tender) -> 
         return None
 
     return (rig.id, max(1, bid))
+
+
+def suggest_bid(company: Company, tender: Tender) -> dict:
+    """
+    Returns a dict with breakdown and suggested range for the player.
+    """
+    current_year = tender.spec.start_date.year
+    
+    # We'll pick the 'best' rig for this tender to show as example breakeven
+    candidates = []
+    for rig in company.rigs:
+        from .contracts import rig_matches_class
+        if not rig_matches_class(rig.rig_type, tender.spec.rig_type):
+            continue
+        if rig.region != tender.spec.region:
+            continue
+        candidates.append(rig)
+        
+    if not candidates:
+        return {"error": "No eligible rigs in fleet for this tender."}
+        
+    # Pick most efficient (lowest opex) for breakeven baseline
+    candidates.sort(key=lambda r: r.opex_per_day_k(current_year))
+    best_rig = candidates[0]
+    
+    breakeven = estimate_break_even_dayrate_k(company, best_rig.id, current_year)
+    
+    # Range: from slightly above breakeven to tender max
+    low_bid = max(breakeven + 5, tender.spec.min_dayrate)
+    high_bid = tender.spec.max_dayrate
+    
+    return {
+        "best_rig_id": best_rig.id,
+        "breakeven_k": breakeven,
+        "suggested_min_k": int(low_bid),
+        "suggested_max_k": int(high_bid),
+        "max_dayrate_k": tender.spec.max_dayrate
+    }

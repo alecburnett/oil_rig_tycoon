@@ -52,7 +52,12 @@ class RigMarketGenerator:
         )
 
         # Price logic: base + condition bonus - age penalty, scaled by steel
-        base_price = 150.0 if rtype == RigType.SEMI else 60.0
+        if rtype == RigType.DRILLSHIP:
+            base_price = 220.0
+        elif rtype == RigType.SEMI:
+            base_price = 150.0
+        else: # JACKUP
+            base_price = 60.0
         
         # Age penalty: -2% per year
         age_factor = 1.0 - (age * 0.02)
