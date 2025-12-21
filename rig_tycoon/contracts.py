@@ -1,12 +1,16 @@
-#!/usr/bin/env python3
-from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import Enum, auto
 from datetime import date
 import random
 import calendar
-from typing import Iterable
+from typing import Iterable, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .models import RigType, Region
+else:
+    # We'll import them locally to avoid circular imports if any, 
+    # but models.py doesn't depend on contracts.py so it's fine.
+    from .models import RigType, Region
 
 
 # -----------------------------
@@ -48,6 +52,18 @@ class PositioningRequired(Enum):
     DP_REQUIRED = auto()
 
 
+def rig_matches_class(rig_type: RigType, req_class: RigClassRequired) -> bool:
+    if req_class == RigClassRequired.JACKUP:
+        return rig_type == RigType.JACKUP
+    if req_class == RigClassRequired.SEMI:
+        return rig_type == RigType.SEMI
+    if req_class == RigClassRequired.DRILLSHIP:
+        return rig_type == RigType.DRILLSHIP
+    if req_class == RigClassRequired.SEMI_OR_DRILLSHIP:
+        return rig_type in (RigType.SEMI, RigType.DRILLSHIP)
+    return False
+
+
 @dataclass(frozen=True)
 class Tender:
     id: int
@@ -58,16 +74,16 @@ class Tender:
             "id": self.id,
             "spec": {
                 "contract_type": self.spec.contract_type.name,
-                "region": self.spec.region,
+                "region": self.spec.region.value,
                 "start_date": self.spec.start_date.isoformat(),
-                "duration_months": self.spec.duration_months,
+                "months": self.spec.months,
                 "water_depth_m": self.spec.water_depth_m,
-                "harsh_required": self.spec.harsh_required,
+                "harsh": self.spec.harsh,
                 "rig_type": self.spec.rig_type.name,
                 "positioning_required": self.spec.positioning_required.name,
                 "min_condition": self.spec.min_condition,
-                "dayrate_k_min": self.spec.dayrate_k_min,
-                "dayrate_k_max": self.spec.dayrate_k_max,
+                "min_dayrate": self.spec.min_dayrate,
+                "max_dayrate": self.spec.max_dayrate,
                 "early_termination_penalty_k": self.spec.early_termination_penalty_k,
             }
         }
@@ -77,16 +93,16 @@ class Tender:
         s = d["spec"]
         spec = TenderSpec(
             contract_type=ContractType[s["contract_type"]],
-            region=s["region"],
+            region=Region(s["region"]),
             start_date=date.fromisoformat(s["start_date"]),
-            duration_months=s["duration_months"],
+            months=s["months"],
             water_depth_m=s["water_depth_m"],
-            harsh_required=s["harsh_required"],
+            harsh=s["harsh"],
             rig_type=RigClassRequired[s["rig_type"]],
             positioning_required=PositioningRequired[s["positioning_required"]],
             min_condition=s["min_condition"],
-            dayrate_k_min=s["dayrate_k_min"],
-            dayrate_k_max=s["dayrate_k_max"],
+            min_dayrate=s["min_dayrate"],
+            max_dayrate=s["max_dayrate"],
             early_termination_penalty_k=s["early_termination_penalty_k"]
         )
         return cls(id=d["id"], spec=spec)
@@ -95,16 +111,16 @@ class Tender:
 @dataclass(frozen=True)
 class TenderSpec:
     contract_type: ContractType
-    region: str
+    region: Region
     start_date: date
-    duration_months: int
+    months: int
     water_depth_m: int
-    harsh_required: bool
+    harsh: bool
     rig_type: RigClassRequired
     positioning_required: PositioningRequired
     min_condition: int
-    dayrate_k_min: int
-    dayrate_k_max: int
+    min_dayrate: int
+    max_dayrate: int
     early_termination_penalty_k: int
 
 
@@ -119,7 +135,7 @@ class ContractGenConfig:
     noise_max: float = 2.6
 
     # Region harsh probability
-    harsh_prob_by_region: dict[str, float] = None  # set in __post_init__
+    harsh_prob_by_region: dict[Region, float] = None  # set in __post_init__
 
     # Contract-type weights
     type_weights: dict[ContractType, float] = None  # set in __post_init__
@@ -141,11 +157,8 @@ class ContractGenConfig:
     def __post_init__(self) -> None:
         if self.harsh_prob_by_region is None:
             self.harsh_prob_by_region = {
-                "NORTH_SEA": 0.3,
-                "GOM": 0,
-                "BRAZIL": 0,
-                "WEST_AFRICA": 0,
-                "MIDDLE_EAST": 0,
+                Region.NORTH_SEA: 0.3,
+                Region.GOM: 0,
             }
         if self.type_weights is None:
             self.type_weights = {
@@ -193,7 +206,7 @@ class ContractGenerator:
                 return item
         return items[-1][0]
 
-    def _pick_harsh(self, region: str) -> bool:
+    def _pick_harsh(self, region: Region) -> bool:
         p = self.cfg.harsh_prob_by_region.get(region, 0.10)
         return self.rng.random() < p
 
@@ -312,13 +325,13 @@ class ContractGenerator:
     def generate_tick(
         self,
         *,
-        regions: Iterable[str],
+        regions: Iterable[Region],
         next_contract_id: int,
         as_of_date: date,
         oil_factor: float = 1.0,       # 0.6 bust .. 1.4 boom
         demand_factor: float = 1.0,    # 0.5 low demand .. 1.8 high demand
-    ) -> tuple[list[Contract], int]:
-        out: list[Contract] = []
+    ) -> tuple[list[Tender], int]:
+        out: list[Tender] = []
         cid = next_contract_id
 
         regions_list = list(regions)
@@ -375,14 +388,14 @@ class ContractGenerator:
                         contract_type=ctype,
                         region=region,
                         start_date=start,
-                        duration_months=duration_months,
+                        months=duration_months,
                         water_depth_m=water_depth_m,
-                        harsh_required=harsh,
+                        harsh=harsh,
                         rig_type=rig_class,
                         positioning_required=positioning,
                         min_condition=min_condition,
-                        dayrate_k_min=dayrate_k_min,
-                        dayrate_k_max=dayrate_k_max,
+                        min_dayrate=dayrate_k_min,
+                        max_dayrate=dayrate_k_max,
                         early_termination_penalty_k=penalty_k,
                     )
                 )

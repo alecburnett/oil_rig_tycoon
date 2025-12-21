@@ -7,7 +7,7 @@ from typing import Optional
 class RigType(str, Enum):
     JACKUP = "jackup"
     SEMI = "semisub"
-    DRILLER = "drillship"
+    DRILLSHIP = "drillship"
 
 
 class RigState(str, Enum):
@@ -19,7 +19,11 @@ class RigState(str, Enum):
 
 class Region(str, Enum):
     NORTH_SEA = "north_sea"
-    GOM = "gom"  # Gulf of Mexico (mild)
+    GOM = "gom"
+    BRAZIL = "brazil"
+    WEST_AFRICA = "west_africa"
+    SE_ASIA = "se_asia"
+    AUSTRALIA = "australia"
 
     def to_json(self) -> str:
         return self.value
@@ -99,6 +103,8 @@ class Rig:
     location_id: Optional[str] = None
     model_id: Optional[str] = None
     company_id: Optional[int] = None
+    transit_months_left: int = 0
+    target_region: Optional[Region] = None
 
     def to_dict(self) -> dict:
         out = {
@@ -114,6 +120,10 @@ class Rig:
             "region": self.region.value,
             "state": self.state.value,
         })
+        if self.transit_months_left > 0:
+            out["transit_months_left"] = self.transit_months_left
+        if self.target_region is not None:
+            out["target_region"] = self.target_region.value
         if self.on_contract_months_left > 0:
             out["on_contract_months_left"] = self.on_contract_months_left
         if self.contract_dayrate > 0:
@@ -141,11 +151,13 @@ class Rig:
             location_id=d.get("location_id"),
             model_id=d.get("model_id"),
             company_id=d.get("company_id"),
+            transit_months_left=d.get("transit_months_left", 0),
+            target_region=Region(d["target_region"]) if d.get("target_region") else None,
         )
 
     @property
     def is_available(self) -> bool:
-        return self.state in (RigState.WARM, RigState.COLD) and self.on_contract_months_left == 0
+        return self.state == RigState.ACTIVE and self.on_contract_months_left == 0 and self.transit_months_left == 0
 
     def opex_per_day_k(self, current_year: int) -> int:
         """
@@ -158,8 +170,10 @@ class Rig:
         return base + age_penalty + condition_penalty
 
     def stacking_cost_per_month_k(self) -> int:
+        if self.state == RigState.ACTIVE:
+            return 850 if self.rig_type == RigType.JACKUP else 1400
         if self.state == RigState.WARM:
-            return 450  # $k/month
+            return 450 if self.rig_type == RigType.JACKUP else 750
         if self.state == RigState.COLD:
             return 180
         return 0
@@ -213,3 +227,10 @@ class RigForSale:
             "rig": self.rig.to_dict(),
             "price_musd": self.price_musd,
         }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> RigForSale:
+        return cls(
+            rig=Rig.from_dict(d["rig"]),
+            price_musd=d["price_musd"],
+        )
